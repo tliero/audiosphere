@@ -16,27 +16,37 @@ SOUND_SCAN_FAIL = "/home/pi/piplayer2/sounds/fail.mp3"
 SOUND_PLAYBACK_ERROR = "/home/pi/piplayer2/sounds/error.mp3"
 QR_SCANNER_TIMEOUT = 3
 
+# photo sensor on PIN 17
+PIN_SENSOR = 17
+
+# IR LED on PIN 22
+PIN_IR_LED = 22
+
+# LED on PIN 27
+PIN_LED = 27
+
+# Buttons on PINs 9, 10 and 11
+PIN_PREV = 9
+PIN_PLAY = 10
+PIN_NEXT = 11
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s.%(msecs)d %(levelname)s - %(message)s')
 logging.info('Initializing')
 
 GPIO.setmode(GPIO.BCM)
 
-# photo sensor on PIN 17
-GPIO.setup(17, GPIO.IN)
+GPIO.setup(PIN_SENSOR, GPIO.IN)
 
-# IR LED on PIN 22
-GPIO.setup(22, GPIO.OUT)
-GPIO.output(22, GPIO.LOW)
+GPIO.setup(PIN_IR_LED, GPIO.OUT)
+GPIO.output(PIN_IR_LED, GPIO.LOW)
 
-# LED on PIN 27
-GPIO.setup(27, GPIO.OUT)
-GPIO.output(27, GPIO.LOW)
+GPIO.setup(PIN_LED, GPIO.OUT)
+GPIO.output(PIN_LED, GPIO.LOW)
 
-# Buttons on PINs 9, 10 and 11
-GPIO.setup(9, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(10, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(11, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(PIN_PREV, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(PIN_PLAY, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(PIN_NEXT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 
 position = 0
@@ -64,9 +74,9 @@ def btn3_callback(channel):
     
     
 
-GPIO.add_event_detect(9, GPIO.FALLING, callback=btn1_callback, bouncetime=1000)
-GPIO.add_event_detect(10, GPIO.FALLING, callback=btn2_callback, bouncetime=400)
-GPIO.add_event_detect(11, GPIO.FALLING, callback=btn3_callback, bouncetime=400)
+GPIO.add_event_detect(PIN_PREV, GPIO.FALLING, callback=btn1_callback, bouncetime=400)
+GPIO.add_event_detect(PIN_PLAY, GPIO.FALLING, callback=btn2_callback, bouncetime=400)
+GPIO.add_event_detect(PIN_NEXT, GPIO.FALLING, callback=btn3_callback, bouncetime=400)
 
 try:
     logging.info('Start moc server')
@@ -76,13 +86,13 @@ try:
     
     while True:
         logging.debug('Wait for photo sensor')
-        GPIO.wait_for_edge(17, GPIO.RISING)
+        GPIO.wait_for_edge(PIN_SENSOR, GPIO.RISING)
         
         logging.debug('Photo sensor active, activating light and camera')
         subprocess.call(["mocp", "-l", SOUND_SCANNING])
         
         # turn LED on
-        GPIO.output(27, GPIO.HIGH)
+        GPIO.output(PIN_LED, GPIO.HIGH)
         
         # scan QR code
         zbarcam = subprocess.Popen(['zbarcam', '--quiet', '--nodisplay', '--raw', '-Sdisable', '-Sqrcode.enable', '--prescale=320x240', '/dev/video0'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -163,11 +173,11 @@ try:
         zbarcam.terminate()
         
         # LED off
-        GPIO.output(27, GPIO.LOW)
+        GPIO.output(PIN_LED, GPIO.LOW)
 
         # wait until sensor is not blocked anymore
-        if (GPIO.input(17) == GPIO.HIGH):
-            GPIO.wait_for_edge(17, GPIO.FALLING)
+        if (GPIO.input(PIN_SENSOR) == GPIO.HIGH):
+            GPIO.wait_for_edge(PIN_SENSOR, GPIO.FALLING)
             time.sleep(1)
 
         
